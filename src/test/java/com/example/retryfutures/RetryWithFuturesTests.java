@@ -21,7 +21,7 @@ public class RetryWithFuturesTests {
 
         System.out.println("the result was: " + result);
 
-        Thread.sleep(10_000L);
+        Thread.sleep(5_000L);
     }
 
     @Test
@@ -35,7 +35,7 @@ public class RetryWithFuturesTests {
             System.out.println("future completed with exception: " + ex.getCause());
         }
 
-        Thread.sleep(10_000L);
+        Thread.sleep(5_000L);
     }
 
     @Test
@@ -49,6 +49,6 @@ public class RetryWithFuturesTests {
             System.out.println("future completed with exception: " + ex.getCause());
         }
 
-        Thread.sleep(10_000L);
+        Thread.sleep(5_000L);
     }
 }

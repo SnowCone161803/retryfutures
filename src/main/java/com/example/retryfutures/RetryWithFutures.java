@@ -14,45 +14,42 @@ public class RetryWithFutures {
     public boolean shouldTimeout = false;
 
     public CompletableFuture<String> retryAnAction() {
-        final var result = new CompletableFuture<String>();
         final var initialDelay = 1;
         final var interval = 1;
 
         final var state = new State();
-        final var cancel = scheduler.scheduleAtFixedRate(
-            () -> performActionWithRetry(result, state),
+        state.cancelIntervalSchedule = scheduler.scheduleAtFixedRate(
+            () -> performActionWithRetry(state),
             initialDelay, interval, TimeUnit.SECONDS);
-        state.cancel = cancel;
 
         final var timeout = 4;
-        final boolean canInterruptWhileRunning = true;
         scheduler.schedule(
             () -> {
-                cancel.cancel(canInterruptWhileRunning);
-                result.completeExceptionally(new FailedInSomeWay("timed out"));
+                state.cancelIntervalSchedule.cancel(CANCEL_WILL_INTERRUPT);
+                state.resultFuture.completeExceptionally(new FailedInSomeWay("timed out"));
             },
             timeout,
             TimeUnit.SECONDS);
-        return result;
+        return state.resultFuture;
     }
 
     private void performActionWithRetry(
-        CompletableFuture<String> futureResult,
         State state) {
         System.out.println("Attempts left: " + state.attemptsLeft);
         if (state.attemptsLeft == 2 && !this.shouldTimeout) {
             if (this.successful) {
-                futureResult.complete("completed successfully");
+                state.resultFuture.complete("completed successfully");
             } else {
-                futureResult.completeExceptionally(new FailedInSomeWay("Did not complete successfully"));
+                state.resultFuture.completeExceptionally(new FailedInSomeWay("Did not complete successfully"));
             }
-            state.cancel.cancel(false);
+            state.cancelIntervalSchedule.cancel(CANCEL_WILL_NOT_INTERRUPT);
         }
         --state.attemptsLeft;
     }
 
     private class State  {
+        public CompletableFuture<String> resultFuture = new CompletableFuture<>();
         public int attemptsLeft = 3;
-        public Future cancel;
+        public Future cancelIntervalSchedule;
     }
 }
