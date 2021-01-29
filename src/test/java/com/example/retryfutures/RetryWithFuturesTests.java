@@ -7,6 +7,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 @RunWith(MockitoJUnitRunner.class)
 public class RetryWithFuturesTests {
 
@@ -24,7 +27,7 @@ public class RetryWithFuturesTests {
         System.out.println("the result was: " + result);
     }
 
-    @Test
+    @Test(expected = ExecutionException.class)
     public void testCompletesUnsuccessfully() throws Exception {
         this.retryWithFutures.performActionOnSecondAttempt = true;
         final var resultFuture =
@@ -37,10 +40,13 @@ public class RetryWithFuturesTests {
             resultFuture.get();
         } catch (ExecutionException ex) {
             System.out.println("future completed with exception: " + ex.getCause());
+            throw ex;
         }
+
+        fail("should have thrown");
     }
 
-    @Test
+    @Test(expected = ExecutionException.class)
     public void testCompletesWithTimeout() throws Exception {
         // never succeeds
         final String failedAttempt = null;
@@ -48,8 +54,11 @@ public class RetryWithFuturesTests {
 
         try {
             resultFuture.get();
-        } catch (Exception ex) {
+        } catch (ExecutionException ex) {
             System.out.println("future completed with exception: " + ex.getCause());
+            throw ex;
         }
+
+        fail("should have thrown");
     }
 }
