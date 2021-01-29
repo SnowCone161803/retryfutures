@@ -12,8 +12,8 @@ public class RetryWithFutures<T> {
     private static final int INTERVAL = 1;
     private static final int INITIAL_DELAY = 0;
 
-    private final boolean CANCEL_WILL_NOT_INTERRUPT = false;
-    private final boolean CANCEL_WILL_INTERRUPT = true;
+    private final boolean DO_NOT_INTERRUPT_THREADS = false;
+    private final boolean INTERRUPT_RUNNING_THREADS = true;
 
     private final ScheduledExecutorService scheduler =
         Executors.newScheduledThreadPool(1);
@@ -41,7 +41,6 @@ public class RetryWithFutures<T> {
             INITIAL_DELAY, INTERVAL, TIME_UNIT);
 
         // handle global timeout timeout
-        final var timeout = 4;
         scheduler.schedule(
             () -> state.failure(new FailedInSomeWay("timed out")),
             GLOBAL_TIMEOUT, TIME_UNIT);
@@ -83,12 +82,12 @@ public class RetryWithFutures<T> {
 
         public void success(T result) {
             this.resultFuture.complete(result);
-            this.cancelIntervalSchedule.cancel(CANCEL_WILL_NOT_INTERRUPT);
+            this.cancelIntervalSchedule.cancel(DO_NOT_INTERRUPT_THREADS);
         }
 
         public void failure(Throwable t) {
             this.resultFuture.completeExceptionally(t);
-            this.cancelIntervalSchedule.cancel(CANCEL_WILL_INTERRUPT);
+            this.cancelIntervalSchedule.cancel(INTERRUPT_RUNNING_THREADS);
         }
     }
 }
