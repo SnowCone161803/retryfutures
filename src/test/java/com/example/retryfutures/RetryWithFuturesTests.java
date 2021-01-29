@@ -11,44 +11,45 @@ import java.util.concurrent.ExecutionException;
 public class RetryWithFuturesTests {
 
     @InjectMocks
-    private RetryWithFutures retryWithFutures;
+    private RetryWithFutures<String> retryWithFutures;
 
     @Test
     public void testCompletesSuccessfully() throws Exception {
-        this.retryWithFutures.successful = true;
-        final var resultFuture = this.retryWithFutures.retryAnAction();
+        this.retryWithFutures.performActionOnSecondAttempt = true;
+        final var resultFuture = this.retryWithFutures.retryAnAction(() -> "success");
+
+        // blocks waiting for a result
         final var result = resultFuture.get();
 
         System.out.println("the result was: " + result);
-
-        Thread.sleep(5_000L);
     }
 
     @Test
     public void testCompletesUnsuccessfully() throws Exception {
-        this.retryWithFutures.successful = false;
-        final var resultFuture = this.retryWithFutures.retryAnAction();
+        this.retryWithFutures.performActionOnSecondAttempt = true;
+        final var resultFuture =
+            this.retryWithFutures.retryAnAction(() -> {
+                throw new RuntimeException("UNITTEST: expected exception");
+            });
 
         try {
+            // blocks waiting for a result
             resultFuture.get();
         } catch (ExecutionException ex) {
             System.out.println("future completed with exception: " + ex.getCause());
         }
-
-        Thread.sleep(5_000L);
     }
 
     @Test
     public void testCompletesWithTimeout() throws Exception {
-        this.retryWithFutures.shouldTimeout = true;
-        final var resultFuture = this.retryWithFutures.retryAnAction();
+        // never succeeds
+        final String failedAttempt = null;
+        final var resultFuture = this.retryWithFutures.retryAnAction(() -> failedAttempt);
 
         try {
             resultFuture.get();
         } catch (Exception ex) {
             System.out.println("future completed with exception: " + ex.getCause());
         }
-
-        Thread.sleep(5_000L);
     }
 }
